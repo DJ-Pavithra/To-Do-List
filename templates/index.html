@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Productivity Task Master</title>
+    <title>Pro-Task Master</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .completed { text-decoration: line-through; color: #adb5bd; }
@@ -11,38 +10,36 @@
         .priority-Medium { border-left: 6px solid #ffc107; }
         .priority-Low { border-left: 6px solid #198754; }
         .dashboard-card { background: #0f172a; color: white; border-radius: 12px; }
-        .task-checkbox { width: 1.2rem; height: 1.2rem; }
+        .task-card { transition: transform 0.2s; }
+        .task-card:hover { transform: translateY(-2px); }
     </style>
 </head>
 <body class="bg-light">
+<div class="container py-5" style="max-width: 850px;">
 
-<div class="container py-5" style="max-width: 900px;">
-    
-    <form action="/add_global_subtask" method="POST">
-        <div class="card dashboard-card shadow mb-4">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Overall Daily Progress</h5>
-                    <span class="badge bg-warning text-dark">{{ finished }}/{{ total }} Steps Done</span>
-                </div>
-                <div class="progress mb-4" style="height: 15px;">
-                    <div class="progress-bar bg-success progress-bar-striped" role="progressbar" style="width: {{ global_progress }}%;">{{ global_progress }}%</div>
-                </div>
-                
-                <div class="row g-2 align-items-center">
-                    <div class="col-auto"><span class="small fw-bold text-uppercase">Bulk Action:</span></div>
-                    <div class="col"><input type="text" name="global_subcontent" class="form-control form-control-sm" placeholder="Add sub-task to checked items..."></div>
-                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-warning">Apply to Selected</button></div>
-                </div>
+    <div class="card dashboard-card shadow mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Overall Productivity</h5>
+                <span class="small">{{ finished }} / {{ total }} Units Completed</span>
             </div>
+            <div class="progress mb-4" style="height: 12px;">
+                <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" style="width: {{ global_progress }}%;"></div>
+            </div>
+            
+            <form id="bulkForm" action="/add_global_subtask" method="POST">
+                <div class="row g-2">
+                    <div class="col"><input type="text" name="global_subcontent" class="form-control form-control-sm" placeholder="Bulk add step to checked items..." required></div>
+                    <div class="col-auto"><button type="submit" class="btn btn-sm btn-warning fw-bold">Apply to Selected</button></div>
+                </div>
+            </form>
         </div>
-
-        </form>
+    </div>
 
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <form action="/" method="POST" class="row g-2">
-                <div class="col-md-5"><input type="text" name="content" class="form-control" placeholder="New Project Goal..." required></div>
+                <div class="col-md-5"><input type="text" name="content" class="form-control" placeholder="New Task Title..." required></div>
                 <div class="col-md-2"><input type="text" name="category" class="form-control" placeholder="Category"></div>
                 <div class="col-md-3">
                     <select name="priority" class="form-select">
@@ -56,44 +53,39 @@
         </div>
     </div>
 
-    <form action="/add_global_subtask" method="POST">
-        {% for task in tasks %}
-        <div class="card mb-3 shadow-sm priority-{{task.priority}}">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="d-flex align-items-center">
-                        <input type="checkbox" name="selected_tasks" value="{{task.id}}" class="form-check-input task-checkbox me-3">
-                        <div>
-                            <span class="badge bg-light text-dark border">{{task.category}}</span>
-                            <h5 class="mb-0 mt-1 {% if task.completed == 1 %}completed{% endif %}">{{task.content}}</h5>
-                        </div>
-                    </div>
+    {% for task in tasks %}
+    <div class="card mb-3 shadow-sm task-card priority-{{task.priority}}">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <input type="checkbox" name="selected_tasks" value="{{task.id}}" form="bulkForm" class="form-check-input me-3" style="width:22px; height:22px;">
                     <div>
-                        <a href="/update/{{task.id}}" class="btn btn-sm btn-outline-success">Done</a>
-                        <a href="/delete/{{task.id}}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        <span class="badge bg-light text-dark border small">{{task.category}}</span>
+                        <h5 class="mb-0 mt-1 {% if task.completed == 1 %}completed{% endif %}">{{task.content}}</h5>
                     </div>
                 </div>
-
-                <div class="ms-5 mt-3">
-                    {% for sub in task.subtasks %}
-                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
-                        <span class="small {% if sub.completed == 1 %}completed{% endif %}">• {{sub.content}}</span>
-                        <a href="/toggle_subtask/{{sub.id}}" class="text-decoration-none">
-                            {% if sub.completed == 1 %}🔄{% else %}✅{% endif %}
-                        </a>
-                    </div>
-                    {% endfor %}
-                    
-                    <form action="/add_subtask/{{task.id}}" method="POST" class="mt-2 d-flex">
-                        <input type="text" name="subcontent" class="form-control form-control-sm me-2 border-0 bg-light" placeholder="Next step...">
-                        <button class="btn btn-sm btn-light border">+</button>
-                    </form>
+                <div class="btn-group">
+                    <a href="/update/{{task.id}}" class="btn btn-sm btn-outline-success">Done</a>
+                    <a href="/delete/{{task.id}}" class="btn btn-sm btn-outline-danger">Del</a>
                 </div>
             </div>
-        </div>
-        {% endfor %}
-    </form>
-</div>
 
+            <div class="ms-5 mt-3 pt-2 border-top border-light">
+                {% for sub in task.subtasks %}
+                <div class="d-flex justify-content-between small py-1">
+                    <span class="{% if sub.completed == 1 %}completed{% endif %}">• {{sub.content}}</span>
+                    <a href="/toggle_subtask/{{sub.id}}" class="text-decoration-none">{% if sub.completed == 1 %}🔄{% else %}✅{% endif %}</a>
+                </div>
+                {% endfor %}
+                
+                <form action="/add_subtask/{{task.id}}" method="POST" class="mt-2 d-flex">
+                    <input type="text" name="subcontent" class="form-control form-control-sm me-2 bg-light border-0" placeholder="Add specific step...">
+                    <button type="submit" class="btn btn-sm btn-secondary">+</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
 </body>
 </html>
